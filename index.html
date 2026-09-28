@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>주휴수당 계산기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fafaf6; --surface:#ffffff; --surface-2:#f1f1eb; --text:#17211a; --muted:#6a7068;
+  --border:#e2e2da; --accent:#1f3a2a; --on-accent:#ffffff; --accent-soft:#e5ece4;
+  --olive:#5b6b2d; --tail:#8a5d1f; --tail-soft:#f5ead9; --danger:#a4403a; --danger-soft:#f6e3e1;
+  --holiday:#3d5f9c; --holiday-soft:#e3eaf6;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#131512; --surface:#1a1d19; --surface-2:#20241f; --text:#eceee8; --muted:#9a9f96;
+    --border:#2d3129; --accent:#8cc5a0; --on-accent:#0f1a13; --accent-soft:#1f3327;
+    --olive:#b7c47e; --tail:#d9a35a; --tail-soft:#2c2418; --danger:#e08a83; --danger-soft:#33201f;
+    --holiday:#8fb0e8; --holiday-soft:#1f2838;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131512; --surface:#1a1d19; --surface-2:#20241f; --text:#eceee8; --muted:#9a9f96;
+  --border:#2d3129; --accent:#8cc5a0; --on-accent:#0f1a13; --accent-soft:#1f3327;
+  --olive:#b7c47e; --tail:#d9a35a; --tail-soft:#2c2418; --danger:#e08a83; --danger-soft:#33201f;
+  --holiday:#8fb0e8; --holiday-soft:#1f2838;
+  color-scheme: dark;
+}
+
+*{box-sizing:border-box;}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:"Noto Sans KR","Inter",system-ui,sans-serif;
+  font-size:14px; line-height:1.5;
+  padding-inline:16px; padding-block:24px;
+}
+.page{max-width:1080px; margin:0 auto; padding-bottom:80px;}
+.kicker{color:var(--olive); font-size:12px; font-weight:600; letter-spacing:0.02em;}
+h1.title{
+  font-size:26px; font-weight:600; letter-spacing:-0.02em; margin:4px 0 4px;
+  text-wrap:balance;
+}
+@media (min-width:600px){ h1.title{font-size:30px; letter-spacing:-0.025em;} }
+.subtitle{color:var(--muted); font-size:13px; margin:0 0 24px;}
+
+.tabular{font-variant-numeric:tabular-nums;}
+
+/* input area */
+.input-row{
+  display:flex; flex-wrap:wrap; gap:20px 32px; align-items:flex-end;
+  padding-bottom:16px; margin-bottom:24px;
+  border-bottom:1px dashed var(--border); position:relative;
+}
+.input-row::before{
+  content:""; position:absolute; left:-4px; bottom:-4px; width:7px; height:7px;
+  border-radius:50%; background:var(--border);
+}
+.period-field{flex:1 1 320px; min-width:260px;}
+.wage-field{flex:0 1 220px; min-width:180px;}
+.field-label{font-size:13px; font-weight:600; color:var(--text); display:block; margin-bottom:8px;}
+.date-pair{display:flex; align-items:center; gap:8px;}
+.date-pair input[type="date"]{flex:1; min-width:0;}
+.date-pair span{color:var(--muted);}
+input[type="date"], input[type="number"]{
+  font:inherit; color:var(--text); background:var(--surface); border:1px solid var(--border);
+  border-radius:6px; padding:9px 10px; width:100%;
+}
+input[type="date"]:focus, input[type="number"]:focus, button:focus-visible, .chip:focus-visible{
+  outline:2px solid var(--accent); outline-offset:1px;
+}
+.minwage-hint{font-size:12px; color:var(--muted); margin-top:6px;}
+
+/* error / guide box */
+.guide-box, .error-box{
+  border:1px solid var(--border); border-radius:4px; background:var(--surface);
+  padding:20px; margin-bottom:24px;
+}
+.error-box{border-left:3px solid var(--danger); color:var(--danger); font-weight:500;}
+.guide-box ol{margin:0; padding-left:20px; color:var(--olive); font-weight:600;}
+.guide-box li{margin-bottom:6px;}
+.guide-box li span{color:var(--text); font-weight:400;}
+.sample-cell{
+  margin-top:16px; border:1px solid var(--border); border-radius:6px; padding:10px 12px;
+  display:inline-flex; align-items:center; gap:10px; background:var(--surface-2); color:var(--muted); font-size:13px;
+}
+
+.main-grid{display:grid; grid-template-columns:1fr; gap:24px;}
+@media (min-width:900px){ .main-grid{grid-template-columns:1.3fr 1fr; align-items:start;} }
+
+/* calendar */
+.usage-line{color:var(--muted); font-size:13px; margin-bottom:12px;}
+.view-switch{display:flex; gap:8px; margin-bottom:12px;}
+.pill-btn{
+  border-radius:999px; border:1px solid var(--border); background:transparent; color:var(--text);
+  padding:6px 14px; font:inherit; font-size:13px; cursor:pointer;
+}
+.pill-btn.active{background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-weight:600;}
+
+.month-block{border:1px solid var(--border); border-radius:4px; background:var(--surface); margin-bottom:16px; overflow:hidden;}
+.month-title{font-size:14px; font-weight:600; padding:10px 12px; border-bottom:1px solid var(--border);}
+.week-header-row{display:grid; grid-template-columns:repeat(7,1fr);}
+.week-header-row div{font-size:12px; color:var(--muted); text-align:center; padding:6px 0;}
+.cal-grid{display:grid; grid-template-columns:repeat(7,1fr);}
+.cal-cell{
+  border-top:1px solid var(--border); border-left:1px solid var(--border);
+  min-height:96px; padding:6px; position:relative; font-size:12px;
+}
+.cal-cell:nth-child(7n){border-right:1px solid var(--border);}
+.cal-grid:last-child .cal-cell{border-bottom:1px solid var(--border);}
+.cal-cell.out{background:var(--surface-2); color:var(--muted);}
+.cal-cell.week-full{background:var(--accent-soft);}
+.cal-cell.week-tail{background:var(--tail-soft);}
+.cell-date{font-weight:600; display:flex; justify-content:space-between; align-items:flex-start;}
+.week-label{font-size:10px; font-weight:600; color:var(--muted);}
+.cell-check{margin-top:4px; display:flex; align-items:center; gap:6px;}
+.cell-check input[type="checkbox"]{width:15px; height:15px; accent-color:var(--accent);}
+.chip{
+  margin-top:4px; border:none; border-radius:4px; padding:2px 6px; font-size:11px; cursor:pointer;
+  background:var(--surface-2); color:var(--text); font-family:inherit;
+}
+.chip.absent{background:var(--danger-soft); color:var(--danger);}
+.chip.holiday{background:var(--holiday-soft); color:var(--holiday);}
+.hours-input{
+  margin-top:4px; width:100%; border:1px solid var(--border); border-radius:4px; padding:3px 4px;
+  font:inherit; font-size:12px; background:var(--surface); color:var(--text);
+}
+.hours-input.over{border-color:var(--danger); color:var(--danger);}
+.hours-input.err{border-color:var(--danger); border-width:2px;}
+
+.legend{display:flex; flex-wrap:wrap; gap:14px; margin-top:4px; margin-bottom:20px; font-size:12px; color:var(--muted);}
+.legend span{display:inline-flex; align-items:center; gap:5px;}
+.legend i{width:11px; height:11px; border-radius:3px; display:inline-block;}
+
+.list-row{display:grid; grid-template-columns:32px 1fr 90px 70px; gap:8px; align-items:center; padding:10px 4px; border-bottom:1px solid var(--border); min-height:44px;}
+.list-week-head{background:var(--surface-2); padding:8px 10px; font-size:12px; font-weight:600; color:var(--muted); border-bottom:1px solid var(--border);}
+.list-row input[type="checkbox"]{width:16px; height:16px; accent-color:var(--accent);}
+.list-date{font-weight:500;}
+.list-out{color:var(--muted);}
+
+/* result panel */
+.result-card{border:1px solid var(--border); border-radius:4px; background:var(--surface); padding:24px;}
+@media (max-width:600px){ .result-card{padding:16px;} }
+.result-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;}
+.result-title{font-size:18px; font-weight:600; letter-spacing:-0.015em;}
+.copy-btn{
+  border-radius:999px; border:none; background:var(--accent); color:var(--on-accent);
+  padding:8px 16px; font:inherit; font-weight:600; font-size:13px; cursor:pointer;
+}
+.copy-btn:disabled{background:var(--surface-2); color:var(--muted); cursor:not-allowed;}
+.copy-wrap{position:relative; display:flex; flex-direction:column; align-items:flex-end; gap:4px;}
+.copy-msg{font-size:12px; color:var(--accent); font-weight:600;}
+.copy-disabled-msg{font-size:12px; color:var(--danger); text-align:right; max-width:180px;}
+
+.total-block{margin-bottom:4px;}
+.total-row{display:flex; align-items:baseline; gap:6px; margin-bottom:6px;}
+.total-num{font-size:28px; font-weight:600; letter-spacing:-0.02em;}
+.total-unit{font-size:13px; color:var(--muted);}
+.total-dim{color:var(--muted);}
+hr.divider{border:none; border-top:1px solid var(--border); margin:16px 0;}
+
+.conclusion{color:var(--danger); font-weight:500; margin-bottom:12px;}
+.notice-box{border-left:3px solid var(--danger); padding:8px 12px; background:var(--danger-soft); color:var(--danger); font-size:13px; margin-bottom:8px; border-radius:0 4px 4px 0;}
+.info-box{border-left:3px solid var(--olive); padding:8px 12px; background:var(--surface-2); color:var(--muted); font-size:13px; margin-bottom:8px; border-radius:0 4px 4px 0;}
+
+table.week-table{width:100%; border-collapse:collapse; font-size:13px; margin-top:8px;}
+table.week-table th{text-align:left; color:var(--muted); font-weight:600; font-size:12px; border-bottom:1px solid var(--text); padding:6px 4px;}
+table.week-table td{padding:8px 4px; border-bottom:1px solid var(--border); vertical-align:top;}
+table.week-table td.num, table.week-table th.num{text-align:right;}
+.grant-yes{font-weight:600;}
+.grant-zero{color:var(--muted);}
+.row-reason{font-size:12px; color:var(--muted); padding-top:0 !important; border-bottom:1px solid var(--border);}
+
+.fold-section{border-top:1px solid var(--border); margin-top:16px; padding-top:16px;}
+.fold-title-row{display:flex; justify-content:space-between; align-items:center; cursor:pointer; padding:6px 0;}
+.fold-title{font-size:15px; font-weight:600;}
+.fold-summary{font-size:12px; color:var(--muted);}
+.fold-body{padding:8px 2px 4px;}
+.fold-toggle{color:var(--muted); font-size:13px;}
+
+.step-block{border-bottom:1px solid var(--border); padding:10px 0;}
+.step-block:last-child{border-bottom:none;}
+.step-title-row{display:flex; justify-content:space-between; align-items:center; cursor:pointer;}
+.step-title{font-size:14px; font-weight:600;}
+.step-summary{font-size:12px; color:var(--muted);}
+.step-body{padding-top:8px; font-size:13px; color:var(--text);}
+.step-body .line{margin-bottom:6px; display:flex; gap:8px;}
+.step-body .line .k{color:var(--muted); min-width:80px; flex-shrink:0;}
+.week-calc{border-left:2px solid var(--border); padding-left:10px; margin:8px 0; font-size:13px;}
+.week-calc .wk-title{font-weight:600; font-size:13px; margin-bottom:4px;}
+.week-calc .wk-line{margin-bottom:2px;}
+.criteria-item{margin-bottom:12px;}
+.criteria-item b{display:block; margin-bottom:2px;}
+
+.mobile-bar{
+  position:fixed; left:0; right:0; bottom:0; background:var(--surface); border-top:1px solid var(--border);
+  padding:10px 16px; padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));
+  display:none; justify-content:space-between; align-items:center; gap:12px; font-size:13px; z-index:20;
+}
+@media (max-width:820px){ .mobile-bar.show{display:flex;} }
+.mobile-bar .mb-figs{display:flex; gap:16px; flex-wrap:wrap;}
+.mobile-bar a{color:var(--accent); font-weight:600; text-decoration:none; white-space:nowrap;}
+[hidden]{display:none !important;}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="kicker">인천시교육청 기준 · 2026·2027년 최저시급 반영</div>
+  <h1 class="title">주휴수당 계산기(참고용)</h1>
+  <p class="subtitle">1개월 미만 계약 근로자용 · 산출 결과는 참고용이며 실제 반영 전 확인 필요</p>
+
+  <div class="input-row">
+    <div class="period-field">
+      <span class="field-label">계약기간(계약서 기준)</span>
+      <div class="date-pair">
+        <input type="date" id="startDate" aria-label="계약 시작일">
+        <span>~</span>
+        <input type="date" id="endDate" aria-label="계약 종료일">
+      </div>
+    </div>
+    <div class="wage-field">
+      <label class="field-label" for="wage">시급</label>
+      <input type="number" id="wage" min="0" step="10" placeholder="선택">
+      <div class="minwage-hint" id="minWageHint">최저시급 2026년 10,320원 · 2027년 10,700원</div>
+    </div>
+  </div>
+
+  <div id="errorBox" class="error-box" hidden></div>
+
+  <div id="guideBox" class="guide-box">
+    <ol>
+      <li>계약서상 계약 시작일과 종료일을 넣으세요. <span>달력이 나타납니다.</span></li>
+      <li>월~금이 하루 8시간으로 체크돼 있어요. <span>실제 근무일과 일 근로시간에 맞게 고치세요.</span></li>
+      <li>결근·공휴일인 날은 '출근 ↻'을 눌러 바꾸세요.</li>
+      <li>결과(넓은 화면은 오른쪽, 휴대폰은 달력 아래)에 총 주휴수당 시간과 총 주휴수당이 바로 계산됩니다. <span>시급을 넣으면 금액도 나옵니다.</span></li>
+    </ol>
+    <div class="sample-cell">
+      <span>입력 예시 →</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:4px;padding:4px 8px;">
+        <input type="checkbox" checked disabled> 출근 <span style="border:1px solid var(--border);border-radius:4px;padding:1px 5px;">8</span>
+      </span>
+    </div>
+  </div>
+
+  <div id="mainArea" hidden>
+    <div class="main-grid">
+      <div class="calendar-col">
+        <div class="usage-line">① 근무하는 날 체크 ② 일 근로시간 입력 ③ 결근·공휴일이면 칩을 눌러 변경(출근 → 결근 → 공휴일)</div>
+        <div class="view-switch">
+          <button class="pill-btn" id="btnMonthView">월간 달력</button>
+          <button class="pill-btn" id="btnListView">날짜 목록</button>
+        </div>
+        <div id="monthView"></div>
+        <div id="listView" hidden></div>
+        <div class="legend">
+          <span><i style="background:var(--accent-soft);border:1px solid var(--accent)"></i>7일 채운 주</span>
+          <span><i style="background:var(--tail-soft);border:1px solid var(--tail)"></i>7일을 채우지 못한 주</span>
+          <span><i style="background:var(--danger-soft);border:1px solid var(--danger)"></i>결근</span>
+          <span><i style="background:var(--holiday-soft);border:1px solid var(--holiday)"></i>공휴일(결근 아님)</span>
+        </div>
+      </div>
+      <div class="result-col">
+        <div class="result-card" id="resultCard"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mobile-bar" id="mobileBar">
+  <div class="mb-figs" id="mbFigs"></div>
+  <a href="#" id="mbLink">결과로 이동 ↓</a>
+</div>
+
+<script>
+/* ================= 계산 엔진 (지침 v1.0 5장) ================= */
+function parseDate(s){ const [y,m,d]=s.split('-').map(Number); return new Date(Date.UTC(y,m-1,d)); }
+function fmtISO(d){ return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0'); }
+function fmtMD(d){
+  const w=['일','월','화','수','목','금','토'][d.getUTCDay()];
+  return (d.getUTCMonth()+1)+'/'+d.getUTCDate()+'('+w+')';
+}
+function addDays(d,n){ const r=new Date(d.getTime()); r.setUTCDate(r.getUTCDate()+n); return r; }
+function daysBetweenIncl(a,b){ return Math.round((b-a)/86400000)+1; }
+function daysInMonth(y,m){ return new Date(Date.UTC(y,m,0)).getUTCDate(); }
+const MIN_WAGE = {2022:9160,2023:9620,2024:9860,2025:10030,2026:10320,2027:10700};
+
+function oneMonthBoundary(start){
+  const y=start.getUTCFullYear(), m=start.getUTCMonth()+1, d=start.getUTCDate();
+  let ny=y, nm=m+1; if(nm>12){nm-=12; ny+=1;}
+  const dim=daysInMonth(ny,nm);
+  if(d<=dim){ return addDays(new Date(Date.UTC(ny,nm-1,d)), -1); }
+  return new Date(Date.UTC(ny,nm-1,dim));
+}
+
+function validate(input){
+  if(!input.start || !input.end) return {code:'E1'};
+  const start=parseDate(input.start), end=parseDate(input.end);
+  if(end<start) return {code:'E2'};
+  const boundary=oneMonthBoundary(start);
+  if(end>=boundary) return {code:'E3', boundary};
+  const checked=(input.days||[]);
+  if(checked.length===0) return {code:'E4'};
+  for(const d of checked){
+    if(d.hours===undefined||d.hours===null||isNaN(d.hours)||d.hours<=0||d.hours>24) return {code:'E5', date:d.date};
+  }
+  return {code:null};
+}
+
+function computeResult(input){
+  const v=validate(input);
+  if(v.code) return {error:v};
+  const start=parseDate(input.start), end=parseDate(input.end);
+  const days=input.days.slice().sort((a,b)=>parseDate(a.date)-parseDate(b.date));
+  const firstWorkDate=parseDate(days[0].date);
+
+  const periodDays=daysBetweenIncl(firstWorkDate,end);
+  let weeklyAverage, basis;
+  if(periodDays<28){
+    const sum=days.reduce((s,d)=>s+d.hours,0);
+    weeklyAverage=sum/(periodDays/7);
+    basis='기간 평균(28일 미만)';
+  } else {
+    const cutoff=addDays(firstWorkDate,27);
+    const sum=days.filter(d=>parseDate(d.date)<=cutoff).reduce((s,d)=>s+d.hours,0);
+    weeklyAverage=sum/4;
+    basis='최초 근무일부터 4주 평균';
+  }
+  const eligible=weeklyAverage>=15;
+
+  const weeks=[]; let cursor=firstWorkDate; let totalHours=0; let overLimitWarning=false; const w1Dates=[];
+  let idx=0;
+  while(cursor<=end){
+    const weekEnd=addDays(cursor,6);
+    const sevenDays=weekEnd<=end;
+    const inWeek=days.filter(d=>{ const dt=parseDate(d.date); return dt>=cursor && dt<=weekEnd; });
+    const hours=inWeek.reduce((s,d)=>s+d.hours,0);
+    const hasAbsence=inWeek.some(d=>d.status==='결근');
+    inWeek.forEach(d=>{ if(d.hours>8) w1Dates.push(d.date); });
+    if(hours>40) overLimitWarning=true;
+    let grant=0, reason=null;
+    if(!eligible) reason='대상 아님';
+    else if(!sevenDays) reason='7일을 채우지 못함';
+    else if(hasAbsence) reason='결근 있음';
+    else grant=Math.min(hours,40)/40*8;
+    weeks.push({idx, from:fmtISO(cursor), to:fmtISO(weekEnd), sevenDays,
+      hours:Math.round(hours*100)/100, grant:Math.round(grant*100)/100, reason});
+    totalHours+=grant; cursor=addDays(cursor,7); idx++;
+  }
+  totalHours=Math.round(totalHours*100)/100;
+
+  const years=[]; for(let y=start.getUTCFullYear(); y<=end.getUTCFullYear(); y++) years.push(y);
+  let minWageNotice=[]; let minWageNoticeDetail=[];
+  if(input.wage!==undefined && input.wage!==null && input.wage>0){
+    for(const y of years){
+      let refYear=y, usedLatest=false;
+      if(!(y in MIN_WAGE)){
+        const known=Object.keys(MIN_WAGE).map(Number); refYear=Math.max(...known); usedLatest=true;
+      }
+      if(input.wage<MIN_WAGE[refYear]) minWageNotice.push({year:y, refYear, usedLatest, value:MIN_WAGE[refYear]});
+    }
+  }
+
+  let expectedAmount=null;
+  if(input.wage!==undefined && input.wage!==null && input.wage>0){
+    expectedAmount=Math.ceil(totalHours*input.wage*100)/100;
+  }
+
+  return {eligible, basis, weeklyAverage:Math.round(weeklyAverage*100)/100, weeks, totalHours,
+    overLimitWarning: overLimitWarning || w1Dates.length>0, w1Dates, minWageNotice, expectedAmount,
+    firstWorkDate, periodDays, sumForAvg: days.reduce((s,d)=>s+d.hours,0)};
+}
+
+/* ================= 상태 ================= */
+const state = {
+  start: '', end: '', wage: null,
+  days: {}, // date -> {checked, status, hours}
+  view: 'month'
+};
+
+function fmtNum(n, opts){
+  opts = opts || {};
+  const maxFrac = opts.maxFrac !== undefined ? opts.maxFrac : 2;
+  return Number(n).toLocaleString('ko-KR', {maximumFractionDigits:maxFrac});
+}
+function fmtWon(n){ return fmtNum(n,{maxFrac:2}) + '원'; }
+
+function regenerateDays(){
+  if(!state.start || !state.end) return;
+  const s=parseDate(state.start), e=parseDate(state.end);
+  if(e<s) return;
+  const boundary = oneMonthBoundary(s);
+  if(e>=boundary) return; // E3, don't touch calendar
+  const newDays = {};
+  let cur = s;
+  while(cur<=e){
+    const iso = fmtISO(cur);
+    if(state.days[iso]){
+      newDays[iso] = state.days[iso];
+    } else {
+      const dow = cur.getUTCDay(); // 0 sun .. 6 sat
+      const isWeekday = dow>=1 && dow<=5;
+      newDays[iso] = {checked:isWeekday, status:'출근', hours:8};
+    }
+    cur = addDays(cur,1);
+  }
+  state.days = newDays;
+}
+
+function buildCalcInput(){
+  const checkedDays = Object.keys(state.days).filter(k=>state.days[k].checked)
+    .sort().map(k=>({date:k, status:state.days[k].status, hours: parseFloat(state.days[k].hours)}));
+  return {start: state.start, end: state.end, days: checkedDays, wage: state.wage};
+}
+
+/* ================= 렌더 ================= */
+const $ = (id)=>document.getElementById(id);
+
+function render(){
+  const errBox = $('errorBox');
+  const guideBox = $('guideBox');
+  const mainArea = $('mainArea');
+
+  if(!state.start || !state.end){
+    errBox.hidden = true;
+    guideBox.hidden = false;
+    mainArea.hidden = true;
+    setMobileBar({state:'first'});
+    return;
+  }
+
+  const s = parseDate(state.start), e = parseDate(state.end);
+  if(e<s){
+    showError('종료일이 시작일보다 빠릅니다. 날짜를 확인해 주세요.');
+    setMobileBar({state:'error'});
+    return;
+  }
+  const boundary = oneMonthBoundary(s);
+  if(e>=boundary){
+    const b = boundary;
+    showError(`계약기간이 1개월 이상입니다. ${fmtMD(s)} 시작이면 1개월이 되는 날이 ${fmtMD(b)}이므로, 종료일이 ${fmtMD(addDays(b,-1))}까지인 계약만 계산합니다(1개월 미만).`);
+    setMobileBar({state:'error'});
+    return;
+  }
+
+  errBox.hidden = true;
+  guideBox.hidden = true;
+  mainArea.hidden = false;
+
+  regenerateDays();
+
+  const input = buildCalcInput();
+  const v = validate(input);
+
+  if(v.code === 'E4'){
+    renderCalendar(null);
+    renderErrorResult('근무하는 날을 하나 이상 체크해 주세요.');
+    setMobileBar({state:'error'});
+    return;
+  }
+  if(v.code === 'E5'){
+    const d = parseDate(v.date);
+    renderCalendar(null);
+    renderErrorResult(`시간을 확인해 주세요(0보다 크고 24 이하): ${fmtMD(d)}`, v.date);
+    setMobileBar({state:'error'});
+    return;
+  }
+
+  const result = computeResult(input);
+  renderCalendar(result);
+  renderResult(result);
+
+  const hasWarning = result.overLimitWarning || (state.wage!==null && state.wage<=0);
+  setMobileBar({state: hasWarning ? 'warning' : 'ok', result});
+}
+
+function showError(msg){
+  const errBox = $('errorBox');
+  errBox.hidden = false;
+  errBox.textContent = msg;
+  $('guideBox').hidden = true;
+  $('mainArea').hidden = true;
+}
+
+function weekIndexOf(dateISO, firstWorkISO){
+  if(!firstWorkISO) return null;
+  const d = parseDate(dateISO), f = parseDate(firstWorkISO);
+  if(d<f) return null;
+  return Math.floor((d-f)/(7*86400000));
+}
+
+function renderCalendar(result){
+  const firstWorkISO = (()=>{
+    const checkedIsos = Object.keys(state.days).filter(k=>state.days[k].checked).sort();
+    return checkedIsos.length ? checkedIsos[0] : null;
+  })();
+
+  renderMonthView(result, firstWorkISO);
+  renderListView(result, firstWorkISO);
+  applyViewVisibility();
+}
+
+function weekColorClass(weekIdx, result){
+  if(weekIdx===null || !result) return '';
+  const wk = result.weeks[weekIdx];
+  if(!wk) return '';
+  return wk.sevenDays ? 'week-full' : 'week-tail';
+}
+
+function renderMonthView(result, firstWorkISO){
+  const container = $('monthView');
+  container.innerHTML = '';
+  const s = parseDate(state.start), e = parseDate(state.end);
+  let monthCursor = new Date(Date.UTC(s.getUTCFullYear(), s.getUTCMonth(), 1));
+  const lastMonth = new Date(Date.UTC(e.getUTCFullYear(), e.getUTCMonth(), 1));
+
+  while(monthCursor <= lastMonth){
+    const y = monthCursor.getUTCFullYear(), m = monthCursor.getUTCMonth();
+    const block = document.createElement('div');
+    block.className = 'month-block';
+    const title = document.createElement('div');
+    title.className = 'month-title';
+    title.textContent = `${y}년 ${m+1}월`;
+    block.appendChild(title);
+
+    const hdr = document.createElement('div');
+    hdr.className = 'week-header-row';
+    ['일','월','화','수','목','금','토'].forEach(w=>{ const c=document.createElement('div'); c.textContent=w; hdr.appendChild(c); });
+    block.appendChild(hdr);
+
+    const firstOfMonth = new Date(Date.UTC(y,m,1));
+    const startWeekday = firstOfMonth.getUTCDay();
+    const gridStart = addDays(firstOfMonth, -startWeekday);
+    const dim = daysInMonth(y, m+1);
+    const totalCells = Math.ceil((startWeekday + dim)/7)*7;
+
+    const grid = document.createElement('div');
+    grid.className = 'cal-grid';
+    for(let i=0;i<totalCells;i++){
+      const cellDate = addDays(gridStart, i);
+      const iso = fmtISO(cellDate);
+      const inRange = cellDate>=s && cellDate<=e;
+      const cell = document.createElement('div');
+      cell.className = 'cal-cell';
+      const dnum = document.createElement('div');
+      dnum.className = 'cell-date';
+      const isOtherMonth = cellDate.getUTCMonth()!==m;
+
+      if(!inRange){
+        cell.classList.add('out');
+        dnum.innerHTML = `<span style="${isOtherMonth?'opacity:.4':''}">${cellDate.getUTCDate()}</span>`;
+        cell.appendChild(dnum);
+        grid.appendChild(cell);
+        continue;
+      }
+
+      const wIdx = weekIndexOf(iso, firstWorkISO);
+      const colorClass = weekColorClass(wIdx, result);
+      if(colorClass) cell.classList.add(colorClass);
+
+      const showWeekLabel = wIdx!==null && (i===0 || weekIndexOf(fmtISO(addDays(cellDate,-1)), firstWorkISO) !== wIdx);
+      dnum.innerHTML = `<span>${cellDate.getUTCDate()}</span>` + (showWeekLabel? `<span class="week-label">${wIdx+1}주차</span>`:'');
+      cell.appendChild(dnum);
+
+      const dayData = state.days[iso] || {checked:false, status:'출근', hours:8};
+
+      const checkRow = document.createElement('label');
+      checkRow.className = 'cell-check';
+      const cb = document.createElement('input');
+      cb.type='checkbox'; cb.checked=!!dayData.checked;
+      cb.addEventListener('change', ()=>{
+        if(!state.days[iso]) state.days[iso]={status:'출근',hours:8};
+        state.days[iso].checked = cb.checked;
+        render();
+      });
+      checkRow.appendChild(cb);
+      checkRow.appendChild(document.createTextNode('소정근로일'));
+      cell.appendChild(checkRow);
+
+      if(dayData.checked){
+        const chip = document.createElement('button');
+        chip.type='button';
+        chip.className = 'chip' + (dayData.status==='결근'?' absent':(dayData.status==='공휴일'?' holiday':''));
+        chip.textContent = dayData.status + ' ↻';
+        chip.addEventListener('click', ()=>{
+          const order=['출근','결근','공휴일'];
+          const next = order[(order.indexOf(state.days[iso].status)+1)%3];
+          state.days[iso].status = next;
+          render();
+        });
+        cell.appendChild(chip);
+
+        const hrsInput = document.createElement('input');
+        hrsInput.type='number'; hrsInput.step='0.5'; hrsInput.min='0'; hrsInput.max='24';
+        hrsInput.className = 'hours-input';
+        hrsInput.value = dayData.hours;
+        if(dayData.hours>8) hrsInput.classList.add('over');
+        if(dayData.hours===undefined||dayData.hours===null||isNaN(dayData.hours)||dayData.hours<=0||dayData.hours>24) hrsInput.classList.add('err');
+        hrsInput.addEventListener('input', ()=>{
+          state.days[iso].hours = hrsInput.value===''? null : parseFloat(hrsInput.value);
+          render();
+        });
+        cell.appendChild(hrsInput);
+      }
+      grid.appendChild(cell);
+    }
+    block.appendChild(grid);
+    container.appendChild(block);
+    monthCursor = new Date(Date.UTC(y, m+1, 1));
+  }
+}
+
+function renderListView(result, firstWorkISO){
+  const container = $('listView');
+  container.innerHTML = '';
+  const s = parseDate(state.start), e = parseDate(state.end);
+  const wrap = document.createElement('div');
+  wrap.className = 'month-block';
+  let lastWeekIdx = undefined;
+  let cur = s;
+  while(cur<=e){
+    const iso = fmtISO(cur);
+    const wIdx = weekIndexOf(iso, firstWorkISO);
+    if(wIdx !== lastWeekIdx){
+      lastWeekIdx = wIdx;
+      const head = document.createElement('div');
+      head.className = 'list-week-head';
+      if(wIdx===null){
+        head.textContent = '최초 근무일 이전';
+      } else {
+        const wk = result ? result.weeks[wIdx] : null;
+        let resultTxt = '';
+        if(wk){
+          resultTxt = wk.grant>0 ? ` · 주휴 ${fmtNum(wk.grant)}시간` : ` · 0시간 · ${wk.reason||''}`;
+        }
+        head.textContent = `${wIdx+1}주차${resultTxt}`;
+      }
+      wrap.appendChild(head);
+    }
+    const row = document.createElement('div');
+    row.className = 'list-row';
+    const dayData = state.days[iso] || {checked:false, status:'출근', hours:8};
+
+    const cb = document.createElement('input');
+    cb.type='checkbox'; cb.checked=!!dayData.checked;
+    cb.addEventListener('change', ()=>{
+      if(!state.days[iso]) state.days[iso]={status:'출근',hours:8};
+      state.days[iso].checked = cb.checked; render();
+    });
+    row.appendChild(cb);
+
+    const dlabel = document.createElement('div');
+    dlabel.className='list-date';
+    dlabel.textContent = fmtMD(cur);
+    row.appendChild(dlabel);
+
+    if(dayData.checked){
+      const chip = document.createElement('button');
+      chip.type='button';
+      chip.className = 'chip' + (dayData.status==='결근'?' absent':(dayData.status==='공휴일'?' holiday':''));
+      chip.textContent = dayData.status + ' ↻';
+      chip.addEventListener('click', ()=>{
+        const order=['출근','결근','공휴일'];
+        const next = order[(order.indexOf(state.days[iso].status)+1)%3];
+        state.days[iso].status = next; render();
+      });
+      row.appendChild(chip);
+
+      const hrsInput = document.createElement('input');
+      hrsInput.type='number'; hrsInput.step='0.5'; hrsInput.min='0'; hrsInput.max='24';
+      hrsInput.className = 'hours-input';
+      hrsInput.value = dayData.hours;
+      if(dayData.hours>8) hrsInput.classList.add('over');
+      hrsInput.addEventListener('input', ()=>{
+        state.days[iso].hours = hrsInput.value===''? null : parseFloat(hrsInput.value);
+        render();
+      });
+      row.appendChild(hrsInput);
+    } else {
+      row.appendChild(document.createElement('div'));
+      row.appendChild(document.createElement('div'));
+    }
+    wrap.appendChild(row);
+    cur = addDays(cur,1);
+  }
+  container.appendChild(wrap);
+}
+
+function applyViewVisibility(){
+  const isMonth = state.view==='month';
+  $('monthView').hidden = !isMonth;
+  $('listView').hidden = isMonth;
+  $('btnMonthView').classList.toggle('active', isMonth);
+  $('btnListView').classList.toggle('active', !isMonth);
+}
+
+function reasonZeroText(basis){ return basis; }
+
+function renderErrorResult(msg){
+  const card = $('resultCard');
+  card.innerHTML = `
+    <div class="result-head">
+      <div class="result-title">결과</div>
+      <div class="copy-wrap"><button class="copy-btn" disabled>결과 복사</button><div class="copy-disabled-msg">오류를 고쳐야 계산됩니다.</div></div>
+    </div>
+    <div class="total-block">
+      <div class="total-row"><span class="total-num tabular">–</span><span class="total-unit">시간</span></div>
+      <div class="total-row"><span class="total-num tabular">–</span><span class="total-unit">원</span></div>
+    </div>
+  `;
+}
+
+function weekReasonLabel(wk){
+  if(wk.grant>0) return null;
+  return wk.reason;
+}
+
+function renderResult(r){
+  const card = $('resultCard');
+  const hasWage = state.wage!==null && state.wage!==undefined && !isNaN(state.wage);
+  const wageInvalid = hasWage && state.wage<=0;
+  const totalHours = r.totalHours;
+  const amountText = (!hasWage) ? '시간만 계산' : (wageInvalid ? '시급 확인 필요' : fmtWon(r.expectedAmount));
+
+  const warnings = [];
+  if(r.overLimitWarning){
+    const dateList = [...new Set(r.w1Dates)].map(d=>fmtMD(parseDate(d))).join(', ');
+    if(r.w1Dates.length){
+      warnings.push(`소정근로시간은 하루 8시간, 1주 40시간을 넘을 수 없습니다(근로기준법 제50조). 넘는 시간은 연장근로일 수 있으니 빼고 입력해 주세요. 확인할 곳: ${dateList}. (계산은 입력값으로 계속하고, 부여시간은 주 40시간까지만 반영)`);
+    }
+    r.weeks.forEach(w=>{
+      if(w.hours>40) warnings.push(`소정근로시간은 하루 8시간, 1주 40시간을 넘을 수 없습니다(근로기준법 제50조). 확인할 곳: ${w.idx+1}주차 합계 ${fmtNum(w.hours)}시간`);
+    });
+  }
+  if(wageInvalid) warnings.push('시급은 0보다 큰 숫자로 입력해 주세요.');
+
+  const canCopy = warnings.length===0;
+
+  const notices = [];
+  if(!hasWage) notices.push({type:'n1'});
+  if(r.minWageNotice.length){
+    r.minWageNotice.forEach(n=>{
+      if(n.usedLatest){
+        notices.push({type:'n2text', text:`${n.year+1}년 최저시급이 아직 앱에 등록되지 않아 ${n.refYear}년 값(${fmtNum(n.value)}원)으로 비교했습니다.`});
+      } else {
+        notices.push({type:'n2text', text:`입력한 시급 ${fmtNum(state.wage)}원이 ${n.year}년 최저시급(${fmtNum(n.value)}원)보다 낮습니다. 시급을 다시 확인해 주세요. 계산은 입력한 시급으로 합니다.`});
+      }
+    });
+  }
+
+  let conclusion = '';
+  if(totalHours===0){
+    if(!r.eligible){
+      conclusion = `주휴수당이 발생하지 않습니다. 이유: 대상 아님(1주 평균 ${fmtNum(r.weeklyAverage)}시간, 15시간 미만).`;
+    } else {
+      const reasons = r.weeks.map(w=>{
+        if(w.grant>0) return null;
+        const label = w.reason==='7일을 채우지 못함' ? `${w.idx+1}주차 7일을 채우지 못함(계약 ${fmtMD(parseDate(state.end))} 종료)` : `${w.idx+1}주차 ${w.reason}`;
+        return label;
+      }).filter(Boolean);
+      conclusion = `주휴수당이 발생하지 않습니다. 이유: ${reasons.join(', ')}.`;
+    }
+  }
+
+  const weekRows = r.weeks.map(w=>{
+    const reason = weekReasonLabel(w);
+    let reasonText = '';
+    if(reason==='7일을 채우지 못함') reasonText = `↳ 7일을 채우지 못함(계약 ${fmtMD(parseDate(state.end))} 종료)`;
+    else if(reason) reasonText = `↳ ${reason}`;
+    return `
+      <tr>
+        <td>${w.idx+1}주차</td>
+        <td>${fmtMD(parseDate(w.from))}~${fmtMD(parseDate(w.to))}</td>
+        <td class="num tabular">${fmtNum(w.hours)}시간</td>
+        <td class="num tabular ${w.grant>0?'grant-yes':'grant-zero'}">${fmtNum(w.grant)}시간</td>
+      </tr>
+      ${reasonText? `<tr><td></td><td colspan="3" class="row-reason">${reasonText}</td></tr>`:''}
+    `;
+  }).join('');
+
+  // 계산 근거 1단계
+  let step1Summary, step1Body;
+  if(r.eligible){
+    step1Summary = `대상 · 1주 평균 ${fmtNum(r.weeklyAverage)}시간`;
+    const formula = r.basis==='최초 근무일부터 4주 평균'
+      ? '1주 평균 = 최초 근무일부터 28일 소정근로시간 합계 ÷ 4'
+      : '1주 평균 = 산정 기간 소정근로시간 합계 ÷ (산정 기간 일수 ÷ 7)';
+    step1Body = `
+      <div class="line"><span class="k">공식</span><span>${formula}</span></div>
+      <div class="line"><span class="k">산정 기간</span><span>${fmtMD(r.firstWorkDate)}~${fmtMD(parseDate(state.end))}(${r.periodDays}일)</span></div>
+      <div class="line"><span class="k">계산</span><span>${fmtNum(r.sumForAvg)}시간 ÷ ${r.basis==='최초 근무일부터 4주 평균'?'4주':`(${r.periodDays}일 ÷ 7 = ${fmtNum(r.periodDays/7)}주)`} = ${fmtNum(r.weeklyAverage)}시간/주</span></div>
+      <div class="line"><span class="k">판정</span><span>1주 평균 ${fmtNum(r.weeklyAverage)}시간 ≥ 15시간 → 주휴수당 대상입니다.</span></div>
+    `;
+  } else {
+    step1Summary = `대상 아님 · 1주 평균 ${fmtNum(r.weeklyAverage)}시간`;
+    step1Body = `<div class="line" style="color:var(--danger)">1주 평균 ${fmtNum(r.weeklyAverage)}시간 &lt; 15시간 → 주휴수당 대상이 아닙니다. 모든 주가 0시간입니다.</div>`;
+  }
+
+  let step2Summary = `총 ${fmtNum(totalHours)}시간`;
+  let step2Body;
+  if(!r.eligible){
+    step2Body = `<div class="line">대상 아님: 1주 평균이 15시간 미만이라 주별 계산을 하지 않습니다. 모든 주가 0시간입니다.</div><div class="line"><b>합계 총 주휴시간 0시간</b></div>`;
+  } else {
+    const weekCalcs = r.weeks.map(w=>{
+      if(w.grant>0){
+        return `<div class="week-calc"><div class="wk-title">${w.idx+1}주차 · ${fmtMD(parseDate(w.from))}~${fmtMD(parseDate(w.to))}</div>
+          <div class="wk-line">7일 채움(예) · 결근(없음) · 소정근로시간 ${fmtNum(w.hours)}시간</div>
+          <div class="wk-line">계산: ${fmtNum(Math.min(w.hours,40))}시간 ÷ 40 × 8 = ${fmtNum(w.grant)}시간</div>
+          <div class="wk-line"><b>결과: 주휴 ${fmtNum(w.grant)}시간</b></div></div>`;
+      }
+      let detail = w.reason==='7일을 채우지 못함' ? `7일을 채우지 못함(계약 ${fmtMD(parseDate(state.end))} 종료)` : w.reason;
+      return `<div class="week-calc"><div class="wk-line"><b>${w.idx+1}주차</b>: 주휴 0시간 · ${detail}</div></div>`;
+    }).join('');
+    step2Body = `
+      <div class="line"><span class="k">공식</span><span>주휴시간 = 1주 소정근로시간 ÷ 40 × 8</span></div>
+      <div class="line"><span class="k">근거</span><span>시행령 별표2: 단시간근로자의 하루 = 4주 소정근로시간 ÷ 20일 → 1주로 줄이면 ÷ 5 = ÷ 40 × 8</span></div>
+      <div class="line"><span class="k">예</span><span>주 40시간 → 8시간 · 주 20시간 → 4시간 · 주 15시간 → 3시간</span></div>
+      <div class="line"><span class="k">상한</span><span>40시간까지</span></div>
+      <div class="line"><span class="k">조건</span><span>7일을 채우고 결근 없는 주만</span></div>
+      <div style="margin-top:6px; font-size:13px; font-weight:600; color:var(--muted);">주별 계산</div>
+      ${weekCalcs}
+      <div class="line" style="margin-top:6px;"><b>합계 ${r.weeks.map(w=>fmtNum(w.grant)).join(' + ')} = 총 주휴시간 ${fmtNum(totalHours)}시간</b></div>
+    `;
+  }
+
+  let step3Summary = hasWage && !wageInvalid ? fmtWon(r.expectedAmount) : '시급 미입력';
+  let step3Body;
+  if(!hasWage || wageInvalid){
+    step3Body = `
+      <div class="line"><span class="k">공식</span><span>총 주휴수당 = 총 주휴시간 × 시급</span></div>
+      <div class="line"><span class="k">근거</span><span>근로기준법 제55조·시행령 별표2: 하루치 소정근로시간에 시간급을 곱함</span></div>
+      <div class="line"><span class="k">계산</span><span>시급을 넣으면 금액이 계산됩니다.</span></div>
+      <div class="line"><span class="k">결과</span><span>—</span></div>
+    `;
+  } else {
+    const raw = totalHours * state.wage;
+    step3Body = `
+      <div class="line"><span class="k">공식</span><span>총 주휴수당 = 총 주휴시간 × 시급</span></div>
+      <div class="line"><span class="k">근거</span><span>근로기준법 제55조·시행령 별표2: 하루치 소정근로시간에 시간급을 곱함</span></div>
+      <div class="line"><span class="k">끝수</span><span>모든 계산이 끝난 뒤 최종 금액만 한 번, 소수점 셋째자리에서 올림</span></div>
+      <div class="line"><span class="k">계산</span><span>${fmtNum(totalHours)}시간 × ${fmtNum(state.wage,{maxFrac:3})}원 = ${fmtNum(raw,{maxFrac:4})}원 → ${fmtWon(r.expectedAmount)} (올림)</span></div>
+      <div class="line"><span class="k">결과</span><span>총 주휴수당 ${fmtWon(r.expectedAmount)}</span></div>
+    `;
+  }
+
+  card.innerHTML = `
+    <div class="result-head">
+      <div class="result-title">결과</div>
+      <div class="copy-wrap">
+        <button class="copy-btn" id="copyBtn" ${canCopy?'':'disabled'}>결과 복사</button>
+        ${canCopy? `<div class="copy-msg" id="copyMsg" hidden>복사했습니다.</div>` : `<div class="copy-disabled-msg">위 경고를 해결해야 결과를 복사할 수 있습니다.</div>`}
+      </div>
+    </div>
+    <div class="total-block">
+      <div class="total-row"><span class="total-num tabular">${fmtNum(totalHours)}</span><span class="total-unit">시간</span></div>
+      <div class="total-row"><span class="total-num tabular">${amountText}</span>${hasWage&&!wageInvalid?'<span class="total-unit"></span>':''}</div>
+    </div>
+    <hr class="divider">
+    ${conclusion? `<div class="conclusion">${conclusion}</div>` : ''}
+    ${warnings.map(w=>`<div class="notice-box">⚠ ${w}</div>`).join('')}
+    ${notices.filter(n=>n.type==='n1').map(()=>`<div class="info-box">ⓘ 시급 미입력</div>`).join('')}
+    ${notices.filter(n=>n.type==='n2text').map(n=>`<div class="info-box">ⓘ ${n.text}</div>`).join('')}
+    <table class="week-table">
+      <thead><tr><th>주차</th><th>기간</th><th class="num">소정근로</th><th class="num">주휴</th></tr></thead>
+      <tbody>${weekRows}</tbody>
+    </table>
+
+    <div class="fold-section">
+      <div class="fold-title-row" data-fold="basis">
+        <div class="fold-title">계산 근거 보기</div>
+        <div class="fold-toggle">▾</div>
+      </div>
+      <div class="fold-body" id="foldBasis">
+        <div class="step-block">
+          <div class="step-title-row" data-step="1"><div class="step-title">1단계 · 주휴수당 대상 여부(요건①)</div><div class="step-summary">${step1Summary}</div></div>
+          <div class="step-body" id="step1Body">${step1Body}</div>
+        </div>
+        <div class="step-block">
+          <div class="step-title-row" data-step="2"><div class="step-title">2단계 · 주별 부여시간(요건②③)</div><div class="step-summary">${step2Summary}</div></div>
+          <div class="step-body" id="step2Body">${step2Body}</div>
+        </div>
+        <div class="step-block">
+          <div class="step-title-row" data-step="3"><div class="step-title">3단계 · 금액</div><div class="step-summary">${step3Summary}</div></div>
+          <div class="step-body" id="step3Body">${step3Body}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fold-section">
+      <div class="fold-title-row" data-fold="criteria">
+        <div class="fold-title">계산 기준 안내</div>
+        <div class="fold-toggle">▾</div>
+      </div>
+      <div class="fold-body" id="foldCriteria" hidden>
+        <div class="criteria-item"><b>① 지급요건 3가지</b>요건① 대상자(1주 소정근로시간 15시간 이상, 계약 단위로 한 번), 요건② 개근(1주간 소정근로일에 결근 없음), 요건③ 7일 존속(1주간 근로관계 존속). 근로기준법 제55조·시행령 제30조, 법 제18조 제3항.</div>
+        <div class="criteria-item"><b>② 1주의 기준</b>최초 근무일부터 7일을 1주로 보고 이후 7일 단위로 반복합니다(인천시교육청 기준).</div>
+        <div class="criteria-item"><b>③ 부여시간</b>부여시간 = min(그 주 소정근로시간, 40) ÷ 40 × 8. 1주 40시간·1일 8시간이 상한입니다(법 제50조).</div>
+        <div class="criteria-item"><b>④ 공휴일</b>주중 공휴일은 결근이 아니고, 그날 원래 일하기로 한 시간은 평균과 부여시간 계산에 모두 포함합니다.</div>
+        <div class="criteria-item"><b>⑤ 금액</b>중간 값은 반올림하지 않고, 최종 총 지급액만 소수점 셋째자리에서 올립니다. 시급은 입력값을 그대로 씁니다.</div>
+        <div class="criteria-item"><b>⑥ 계산 범위</b>휴가, 여러 계약 합산, 방학 중 특례, 세금 공제는 다루지 않습니다. 실제 지급 전 담당 부서(교육청 노무 담당)의 확인이 필요합니다.</div>
+      </div>
+    </div>
+  `;
+
+  card.querySelectorAll('[data-fold]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const target = el.getAttribute('data-fold')==='basis' ? $('foldBasis') : $('foldCriteria');
+      target.hidden = !target.hidden;
+      el.querySelector('.fold-toggle').textContent = target.hidden ? '▸' : '▾';
+    });
+  });
+  card.querySelectorAll('[data-step]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const n = el.getAttribute('data-step');
+      const body = $('step'+n+'Body');
+      body.hidden = !body.hidden;
+    });
+  });
+
+  if(canCopy){
+    $('copyBtn').addEventListener('click', ()=>copyResult(r, {totalHours, amountText, hasWage, wageInvalid}));
+  }
+}
+
+function copyResult(r, extra){
+  const hasWage = extra.hasWage, wageInvalid = extra.wageInvalid;
+  const wageDisplay = !hasWage ? '미입력' : (wageInvalid ? `${fmtNum(state.wage)}원(확인 필요)` : (function(){
+    let t = `${fmtNum(state.wage)}원`;
+    const notice = r.minWageNotice.find(n=>!n.usedLatest);
+    if(notice) t += ` (${notice.year}년 최저시급 ${fmtNum(notice.value)}원보다 낮음)`;
+    return t;
+  })());
+  const amountDisplay = !hasWage ? '시급 미입력' : (wageInvalid ? '시급 확인 필요' : `${fmtWon(r.expectedAmount)} (${fmtNum(r.totalHours)}시간 × ${fmtNum(state.wage)}원)`);
+  const eligibleDisplay = r.eligible ? `대상 (1주 평균 ${fmtNum(r.weeklyAverage)}시간 ≥ 15시간)` : `대상 아님 (1주 평균 ${fmtNum(r.weeklyAverage)}시간 < 15시간)`;
+
+  const summaryRows = [
+    ['근로계약기간', `${fmtMD(parseDate(state.start))} ~ ${fmtMD(parseDate(state.end))}`],
+    ['시급', wageDisplay],
+    ['총 주휴수당 시간', `${fmtNum(r.totalHours)}시간`],
+    ['총 주휴수당', amountDisplay],
+    ['주휴수당 대상 여부', eligibleDisplay],
+  ];
+
+  const weekRows = r.weeks.map(w=>{
+    let note = '';
+    if(w.grant<=0){
+      note = w.reason==='7일을 채우지 못함' ? `7일을 채우지 못함(계약 ${fmtMD(parseDate(state.end))} 종료)` : (w.reason||'');
+    }
+    return [`${w.idx+1}주차`, `${fmtMD(parseDate(w.from))}~${fmtMD(parseDate(w.to))}`, `${fmtNum(w.hours)}시간`, `${fmtNum(w.grant)}시간`, note];
+  });
+
+  const html = `
+    <table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse;">
+      <tbody>
+      ${summaryRows.map(([k,v])=>`<tr><td><b>${k}</b></td><td>${v}</td></tr>`).join('')}
+      </tbody>
+    </table>
+    <br>
+    <table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse;">
+      <thead><tr><th>주차</th><th>기간</th><th>소정근로시간</th><th>주휴시간</th><th>비고</th></tr></thead>
+      <tbody>${weekRows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table>
+    <br>
+    <div>적용 기준: 최초 근무일부터 7일 단위 1주(인천시교육청 기준) · 근로기준법 제55조·시행령 제30조·별표2 · 최종 금액만 소수점 셋째자리에서 올림</div>
+  `;
+
+  const plainLines = [];
+  summaryRows.forEach(([k,v])=>plainLines.push(`${k}\t${v}`));
+  plainLines.push('');
+  plainLines.push(['주차','기간','소정근로시간','주휴시간','비고'].join('\t'));
+  weekRows.forEach(r=>plainLines.push(r.join('\t')));
+  plainLines.push('');
+  plainLines.push('적용 기준: 최초 근무일부터 7일 단위 1주(인천시교육청 기준) · 근로기준법 제55조·시행령 제30조·별표2 · 최종 금액만 소수점 셋째자리에서 올림');
+  const plain = plainLines.join('\n');
+
+  const done = ()=>{
+    const msg = $('copyMsg');
+    if(msg){ msg.hidden=false; setTimeout(()=>{ msg.hidden=true; }, 2500); }
+  };
+
+  if(navigator.clipboard && window.ClipboardItem){
+    const item = new ClipboardItem({
+      'text/html': new Blob([html], {type:'text/html'}),
+      'text/plain': new Blob([plain], {type:'text/plain'})
+    });
+    navigator.clipboard.write([item]).then(done).catch(()=>{
+      navigator.clipboard.writeText(plain).then(done).catch(()=>fallbackSelect(plain));
+    });
+  } else if(navigator.clipboard){
+    navigator.clipboard.writeText(plain).then(done).catch(()=>fallbackSelect(plain));
+  } else {
+    fallbackSelect(plain);
+  }
+}
+
+function fallbackSelect(text){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta);
+  ta.select();
+  try{ document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(ta);
+}
+
+function setMobileBar(opts){
+  const bar = $('mobileBar');
+  const figs = $('mbFigs');
+  const link = $('mbLink');
+  if(opts.state==='first'){
+    bar.classList.remove('show');
+    return;
+  }
+  bar.classList.add('show');
+  if(opts.state==='error'){
+    figs.innerHTML = '<span>입력 확인 필요</span>';
+    link.style.visibility='hidden';
+    return;
+  }
+  link.style.visibility='visible';
+  const r = opts.result;
+  const hasWage = state.wage!==null && state.wage!==undefined && !isNaN(state.wage) && state.wage>0;
+  figs.innerHTML = hasWage
+    ? `<span>총 주휴수당 시간 ${fmtNum(r.totalHours)}시간</span><span>총 주휴수당 ${fmtWon(r.expectedAmount)}</span>`
+    : `<span>총 주휴수당 시간 ${fmtNum(r.totalHours)}시간</span><span>총 주휴수당 시급 미입력</span>`;
+
+  link.onclick = (e)=>{
+    e.preventDefault();
+    const card = $('resultCard');
+    const rect = card.getBoundingClientRect();
+    const visible = rect.top < window.innerHeight && rect.bottom > 0;
+    if(visible){
+      window.scrollTo({top:0, behavior:'smooth'});
+      link.textContent = '결과로 이동 ↓';
+    } else {
+      card.scrollIntoView({behavior:'smooth', block:'start'});
+      link.textContent = '달력으로 ↑';
+    }
+  };
+  const checkScroll = ()=>{
+    const card = $('resultCard');
+    const rect = card.getBoundingClientRect();
+    const visible = rect.top < window.innerHeight && rect.bottom > 0;
+    link.textContent = visible ? '달력으로 ↑' : '결과로 이동 ↓';
+  };
+  window.removeEventListener('scroll', checkScroll);
+  window.addEventListener('scroll', checkScroll, {passive:true});
+}
+
+/* ================= 이벤트 바인딩 ================= */
+$('startDate').addEventListener('change', (e)=>{ state.start = e.target.value; render(); });
+$('endDate').addEventListener('change', (e)=>{ state.end = e.target.value; render(); });
+$('wage').addEventListener('input', (e)=>{
+  state.wage = e.target.value===''? null : parseFloat(e.target.value);
+  render();
+});
+$('btnMonthView').addEventListener('click', ()=>{ state.view='month'; applyViewVisibility(); });
+$('btnListView').addEventListener('click', ()=>{ state.view='list'; applyViewVisibility(); });
+
+function initView(){
+  state.view = window.matchMedia('(max-width:600px)').matches ? 'list' : 'month';
+}
+initView();
+render();
+</script>
+</body>
+</html>
