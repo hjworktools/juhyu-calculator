@@ -52,28 +52,49 @@ h1.title{
 
 /* input area */
 .input-row{
-  display:flex; flex-wrap:wrap; gap:20px 32px; align-items:flex-end;
-  padding-bottom:16px; margin-bottom:24px;
-  border-bottom:1px dashed var(--border); position:relative;
+  display:grid; grid-template-columns:1fr 220px; gap:20px 32px; align-items:end;
+  border:1px solid var(--border); border-radius:4px; background:var(--surface);
+  padding:20px; margin-bottom:24px;
+  transition:border-color .12s ease, box-shadow .12s ease;
 }
-.input-row::before{
-  content:""; position:absolute; left:-4px; bottom:-4px; width:7px; height:7px;
-  border-radius:50%; background:var(--border);
+.input-row:focus-within{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-soft);
 }
-.period-field{flex:1 1 320px; min-width:260px;}
-.wage-field{flex:0 1 220px; min-width:180px;}
+@media (max-width:600px){ .input-row{grid-template-columns:1fr;} }
+.period-field, .wage-field{display:flex; flex-direction:column;}
 .field-label{font-size:13px; font-weight:600; color:var(--text); display:block; margin-bottom:8px;}
+.wage-label-row{display:flex; align-items:center; gap:6px;}
 .date-pair{display:flex; align-items:center; gap:8px;}
 .date-pair input[type="date"]{flex:1; min-width:0;}
 .date-pair span{color:var(--muted);}
 input[type="date"], input[type="number"]{
   font:inherit; color:var(--text); background:var(--surface); border:1px solid var(--border);
-  border-radius:6px; padding:9px 10px; width:100%;
+  border-radius:6px; padding:9px 10px; width:100%; height:40px;
 }
 input[type="date"]:focus, input[type="number"]:focus, button:focus-visible, .chip:focus-visible{
   outline:2px solid var(--accent); outline-offset:1px;
 }
-.minwage-hint{font-size:12px; color:var(--muted); margin-top:6px;}
+.info-wrap{position:relative; display:inline-flex;}
+.info-btn{
+  width:16px; height:16px; border-radius:50%; border:1px solid var(--muted); background:transparent;
+  color:var(--muted); font-size:10px; font-weight:600; line-height:1; cursor:pointer; padding:0;
+  display:inline-flex; align-items:center; justify-content:center; font-family:inherit;
+}
+.info-btn:hover, .info-btn.open{border-color:var(--accent); color:var(--accent);}
+.info-tooltip{
+  position:absolute; left:0; top:calc(100% + 8px); z-index:10; white-space:nowrap;
+  background:var(--text); color:var(--bg); font-size:12px; font-weight:400;
+  padding:7px 10px; border-radius:6px; box-shadow:0 4px 10px rgba(0,0,0,0.15);
+  opacity:0; visibility:hidden; pointer-events:none; transition:opacity .12s ease;
+}
+.info-tooltip::before{
+  content:""; position:absolute; left:6px; bottom:100%; border:5px solid transparent; border-bottom-color:var(--text);
+}
+.info-wrap:hover .info-tooltip, .info-tooltip.open{
+  opacity:1; visibility:visible;
+}
+@media (max-width:600px){ .info-tooltip{left:auto; right:0;} .info-tooltip::before{left:auto; right:6px;} }
 
 /* error / guide box */
 .guide-box, .error-box{
@@ -223,9 +244,14 @@ table.week-table td.num, table.week-table th.num{text-align:right;}
       </div>
     </div>
     <div class="wage-field">
-      <label class="field-label" for="wage">시급</label>
+      <span class="field-label wage-label-row">
+        <label for="wage">시급</label>
+        <span class="info-wrap">
+          <button type="button" class="info-btn" id="minWageInfoBtn" aria-label="최저시급 안내" aria-describedby="minWageTooltip">?</button>
+          <span class="info-tooltip" id="minWageTooltip" role="tooltip">최저시급 2026년 10,320원 · 2027년 10,700원</span>
+        </span>
+      </span>
       <input type="number" id="wage" min="0" step="10" placeholder="선택">
-      <div class="minwage-hint" id="minWageHint">최저시급 2026년 10,320원 · 2027년 10,700원</div>
     </div>
   </div>
 
@@ -247,13 +273,13 @@ table.week-table td.num, table.week-table th.num{text-align:right;}
   </div>
 
   <div id="mainArea" hidden>
+    <div class="usage-line">① 근무하는 날 체크 ② 일 근로시간 입력 ③ 결근·공휴일이면 칩을 눌러 변경(출근 → 결근 → 공휴일)</div>
+    <div class="view-switch">
+      <button class="pill-btn" id="btnMonthView">월간 달력</button>
+      <button class="pill-btn" id="btnListView">날짜 목록</button>
+    </div>
     <div class="main-grid">
       <div class="calendar-col">
-        <div class="usage-line">① 근무하는 날 체크 ② 일 근로시간 입력 ③ 결근·공휴일이면 칩을 눌러 변경(출근 → 결근 → 공휴일)</div>
-        <div class="view-switch">
-          <button class="pill-btn" id="btnMonthView">월간 달력</button>
-          <button class="pill-btn" id="btnListView">날짜 목록</button>
-        </div>
         <div id="monthView"></div>
         <div id="listView" hidden></div>
         <div class="legend">
@@ -1059,6 +1085,19 @@ $('wage').addEventListener('input', (e)=>{
 });
 $('btnMonthView').addEventListener('click', ()=>{ state.view='month'; applyViewVisibility(); });
 $('btnListView').addEventListener('click', ()=>{ state.view='list'; applyViewVisibility(); });
+
+$('minWageInfoBtn').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  const tip = $('minWageTooltip');
+  const btn = $('minWageInfoBtn');
+  const willOpen = !tip.classList.contains('open');
+  tip.classList.toggle('open', willOpen);
+  btn.classList.toggle('open', willOpen);
+});
+document.addEventListener('click', ()=>{
+  $('minWageTooltip').classList.remove('open');
+  $('minWageInfoBtn').classList.remove('open');
+});
 
 function initView(){
   state.view = window.matchMedia('(max-width:600px)').matches ? 'list' : 'month';
