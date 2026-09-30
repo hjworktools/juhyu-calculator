@@ -83,18 +83,21 @@ input[type="date"]:focus, input[type="number"]:focus, button:focus-visible, .chi
 }
 .info-btn:hover, .info-btn.open{border-color:var(--accent); color:var(--accent);}
 .info-tooltip{
-  position:absolute; left:0; top:calc(100% + 8px); z-index:10; white-space:nowrap;
+  position:absolute; left:50%; top:calc(100% + 8px); z-index:10;
+  transform:translateX(-50%);
+  width:max-content; max-width:min(240px, calc(100vw - 32px));
+  white-space:normal;
   background:var(--text); color:var(--bg); font-size:12px; font-weight:400;
   padding:7px 10px; border-radius:6px; box-shadow:0 4px 10px rgba(0,0,0,0.15);
   opacity:0; visibility:hidden; pointer-events:none; transition:opacity .12s ease;
 }
 .info-tooltip::before{
-  content:""; position:absolute; left:6px; bottom:100%; border:5px solid transparent; border-bottom-color:var(--text);
+  content:""; position:absolute; left:50%; bottom:100%; transform:translateX(-50%);
+  border:5px solid transparent; border-bottom-color:var(--text);
 }
 .info-wrap:hover .info-tooltip, .info-tooltip.open{
   opacity:1; visibility:visible;
 }
-@media (max-width:600px){ .info-tooltip{left:auto; right:0;} .info-tooltip::before{left:auto; right:6px;} }
 
 /* error / guide box */
 .guide-box, .error-box{
@@ -1086,21 +1089,35 @@ $('wage').addEventListener('input', (e)=>{
 $('btnMonthView').addEventListener('click', ()=>{ state.view='month'; applyViewVisibility(); });
 $('btnListView').addEventListener('click', ()=>{ state.view='list'; applyViewVisibility(); });
 
+function positionTooltip(tip){
+  tip.style.transform = 'translateX(-50%)';
+  const rect = tip.getBoundingClientRect();
+  const margin = 16;
+  let shift = 0;
+  if(rect.left < margin) shift = margin - rect.left;
+  else if(rect.right > window.innerWidth - margin) shift = (window.innerWidth - margin) - rect.right;
+  if(shift !== 0) tip.style.transform = `translateX(calc(-50% + ${shift}px))`;
+}
+const minWageTip = $('minWageTooltip');
+const minWageInfoWrap = minWageTip.closest('.info-wrap');
+minWageInfoWrap.addEventListener('mouseenter', ()=>positionTooltip(minWageTip));
 $('minWageInfoBtn').addEventListener('click', (e)=>{
   e.stopPropagation();
-  const tip = $('minWageTooltip');
+  const tip = minWageTip;
   const btn = $('minWageInfoBtn');
   const willOpen = !tip.classList.contains('open');
   tip.classList.toggle('open', willOpen);
   btn.classList.toggle('open', willOpen);
+  if(willOpen) positionTooltip(tip);
 });
 document.addEventListener('click', ()=>{
   $('minWageTooltip').classList.remove('open');
   $('minWageInfoBtn').classList.remove('open');
 });
+window.addEventListener('resize', ()=>{ if(minWageTip.classList.contains('open')) positionTooltip(minWageTip); });
 
 function initView(){
-  state.view = window.matchMedia('(max-width:600px)').matches ? 'list' : 'month';
+  state.view = 'month';
 }
 initView();
 render();
