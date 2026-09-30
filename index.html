@@ -40,7 +40,13 @@ body{
   padding-inline:16px; padding-block:24px;
 }
 .page{max-width:1080px; margin:0 auto; padding-bottom:80px;}
-.kicker{color:var(--olive); font-size:12px; font-weight:600; letter-spacing:0.02em;}
+.test-badge{
+  display:inline-flex; align-items:center; gap:5px;
+  border:1px solid var(--tail); color:var(--tail); background:var(--tail-soft);
+  font-size:12px; font-weight:600; letter-spacing:0.01em;
+  padding:3px 10px; border-radius:999px; margin-bottom:8px;
+}
+.test-badge::before{content:"●"; font-size:8px;}
 h1.title{
   font-size:26px; font-weight:600; letter-spacing:-0.02em; margin:4px 0 4px;
   text-wrap:balance;
@@ -238,7 +244,7 @@ table.week-table td.num, table.week-table th.num{text-align:right;}
 </head>
 <body>
 <div class="page">
-  <div class="kicker">인천시교육청 기준 · 2026·2027년 최저시급 반영</div>
+  <div class="test-badge">테스트 중 · 피드백 환영</div>
   <h1 class="title">주휴수당 계산기(참고용)</h1>
   <p class="subtitle">1개월 미만 계약 근로자용 · 산출 결과는 참고용이며 실제 반영 전 확인 필요</p>
 
@@ -269,7 +275,7 @@ table.week-table td.num, table.week-table th.num{text-align:right;}
     <ol>
       <li>계약서상 계약 시작일과 종료일을 넣으세요. <span>달력이 나타납니다.</span></li>
       <li>월~금이 하루 8시간으로 체크돼 있어요. <span>실제 근무일과 일 근로시간에 맞게 고치세요.</span></li>
-      <li>결근·공휴일인 날은 '출근 ↻'을 눌러 바꾸세요.</li>
+      <li>결근·공휴일인 날은 상태를 눌러 바꾸세요(출근 → 결근 → 공휴일).</li>
       <li>결과(넓은 화면은 오른쪽, 휴대폰은 달력 아래)에 총 주휴수당 시간과 총 주휴수당이 바로 계산됩니다. <span>시급을 넣으면 금액도 나옵니다.</span></li>
     </ol>
     <div class="sample-cell">
@@ -281,7 +287,7 @@ table.week-table td.num, table.week-table th.num{text-align:right;}
   </div>
 
   <div id="mainArea" hidden>
-    <div class="usage-line">① 근무하는 날 체크 ② 일 근로시간 입력 ③ 결근·공휴일이면 칩을 눌러 변경(출근 → 결근 → 공휴일)</div>
+    <div class="usage-line">① 근무하는 날 체크 ② 일 근로시간 입력 ③ 결근·공휴일이면 상태를 눌러 바꾸기(출근 → 결근 → 공휴일)</div>
     <div class="view-switch">
       <button class="pill-btn" id="btnMonthView">월간 달력</button>
       <button class="pill-btn" id="btnListView">날짜 목록</button>
@@ -935,6 +941,7 @@ function renderResult(r){
         <div class="criteria-item"><b>④ 공휴일</b>주중 공휴일은 결근이 아니고, 그날 원래 일하기로 한 시간은 평균과 부여시간 계산에 모두 포함합니다.</div>
         <div class="criteria-item"><b>⑤ 금액</b>중간 값은 반올림하지 않고, 최종 총 지급액만 소수점 셋째자리에서 올립니다. 시급은 입력값을 그대로 씁니다.</div>
         <div class="criteria-item"><b>⑥ 계산 범위</b>휴가, 여러 계약 합산, 방학 중 특례, 세금 공제는 다루지 않습니다. 실제 지급 전 담당 부서(교육청 노무 담당)의 확인이 필요합니다.</div>
+        <div class="criteria-item"><b>⑦ 기준 자료</b>인천시교육청 기준(최초 근무일부터 7일을 1주로 계산)을 따르며, 최저시급은 2026·2027년 값을 반영했습니다.</div>
       </div>
     </div>
   `;
