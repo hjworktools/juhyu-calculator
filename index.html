@@ -68,6 +68,10 @@ h1.title{
 .date-pair{display:flex; align-items:center; gap:8px;}
 .date-pair input[type="date"]{flex:1; min-width:0;}
 .date-pair span{color:var(--muted);}
+@media (max-width:480px){
+  .date-pair{flex-direction:column; align-items:stretch; gap:6px;}
+  .date-pair span{align-self:center; font-size:12px;}
+}
 input[type="date"], input[type="number"]{
   font:inherit; color:var(--text); background:var(--surface); border:1px solid var(--border);
   border-radius:6px; padding:9px 10px; width:100%; height:40px;
@@ -114,6 +118,7 @@ input[type="date"]:focus, input[type="number"]:focus, button:focus-visible, .chi
 }
 
 .main-grid{display:grid; grid-template-columns:1fr; gap:24px;}
+.calendar-col, .result-col{min-width:0;}
 @media (min-width:900px){ .main-grid{grid-template-columns:1.3fr 1fr; align-items:start;} }
 
 /* calendar */
